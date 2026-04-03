@@ -1,64 +1,102 @@
 import streamlit as st
-import tensorflow as tf
-import numpy as np
-import cv2
-from PIL import Image
-import time
 
-# ------------------------
-# Page Setup
-# ------------------------
 st.set_page_config(page_title="SUSTAIN TECH AI", layout="wide")
-st.title("SUSTAIN TECH AI — Plastic Detection & Pyrolysis System")
 
-# ------------------------
-# Load Model
-# ------------------------
-@st.cache_resource
-def load_model():
-    return tf.keras.models.load_model("my_model/my_model.h5")
+st.title("SUSTAIN TECH AI — Plastic Detection & Pyrolysis")
 
-model = load_model()
+st.markdown("Detect plastic using AI → simulate pyrolysis → check quality")
 
-st.success("Model Loaded Successfully")
+# -------------------------
+# Teachable Machine Web App
+# -------------------------
 
-# ------------------------
-# Classes (EDIT IF NEEDED)
-# ------------------------
-CLASS_NAMES = ["Plastic", "Not Plastic"]
+st.components.v1.html("""
+<div style="text-align:center;">
+    <h3>📷 Plastic Detection Camera</h3>
+    <button onclick="init()">Start Camera</button>
+    <div id="webcam-container"></div>
+    <div id="label-container"></div>
+</div>
 
-# ------------------------
-# Camera
-# ------------------------
-st.header("Camera Detection")
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest"></script>
+<script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest"></script>
 
-image = st.camera_input("Take a photo")
+<script>
+const URL = "./my_model/";
 
-if image:
-    img = Image.open(image)
-    st.image(img)
+let model, webcam, labelContainer, maxPredictions;
 
-    img_array = np.array(img)
-    img_resized = cv2.resize(img_array, (224, 224))
-    img_input = np.expand_dims(img_resized / 255.0, axis=0)
+async function init() {
+    const modelURL = URL + "model.json";
+    const metadataURL = URL + "metadata.json";
 
-    prediction = model.predict(img_input)
-    index = np.argmax(prediction)
-    confidence = float(prediction[0][index])
+    model = await tmImage.load(modelURL, metadataURL);
+    maxPredictions = model.getTotalClasses();
 
-    result = CLASS_NAMES[index]
+    webcam = new tmImage.Webcam(250, 250, true);
+    await webcam.setup();
+    await webcam.play();
+    window.requestAnimationFrame(loop);
 
-    st.write(f"Result: **{result}** ({confidence:.2f})")
+    document.getElementById("webcam-container").appendChild(webcam.canvas);
+    labelContainer = document.getElementById("label-container");
 
-    if result == "Plastic":
-        st.success("Plastic detected — Running Pyrolysis")
+    for (let i = 0; i < maxPredictions; i++) {
+        labelContainer.appendChild(document.createElement("div"));
+    }
+}
 
-        progress = st.progress(0)
-        for i in range(100):
-            time.sleep(0.02)
-            progress.progress(i + 1)
+async function loop() {
+    webcam.update();
+    await predict();
+    window.requestAnimationFrame(loop);
+}
 
-        st.success("Pyrolysis Done")
+async function predict() {
+    const prediction = await model.predict(webcam.canvas);
 
-    else:
-        st.error("Not Plastic")
+    let topClass = "";
+    let topProb = 0;
+
+    for (let i = 0; i < maxPredictions; i++) {
+        let p = prediction[i];
+        let text = p.className + ": " + p.probability.toFixed(2);
+        labelContainer.childNodes[i].innerHTML = text;
+
+        if (p.probability > topProb) {
+            topProb = p.probability;
+            topClass = p.className;
+        }
+    }
+
+    // Show plastic status clearly
+    if (topClass.toLowerCase().includes("plastic")) {
+        document.body.style.backgroundColor = "#d4edda";
+    } else {
+        document.body.style.backgroundColor = "#f8d7da";
+    }
+}
+</script>
+""", height=600)
+
+# -------------------------
+# Pyrolysis Simulation
+# -------------------------
+
+st.header("🔥 Pyrolysis Simulation")
+
+if st.button("Run Simulation"):
+    progress = st.progress(0)
+
+    for i in range(100):
+        progress.progress(i + 1)
+
+    st.success("Pyrolysis Complete!")
+
+    st.subheader("📊 Output Quality")
+
+    st.write("Efficiency: 87%")
+    st.write("Fuel Yield: 78%")
+    st.write("Impurity: Low")
+
+    st.success("High-quality fuel produced ✅")
