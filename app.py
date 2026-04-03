@@ -1,5 +1,8 @@
 import streamlit as st
+from streamlit_webrtc import webrtc_streamer, VideoTransformerBase
 import numpy as np
+import cv2
+from PIL import Image
 import time
 
 st.set_page_config(page_title="SUSTAIN TECH AI", layout="wide")
@@ -10,15 +13,28 @@ Prototype: Tracks plastic type using camera, simulates pyrolysis, and checks pro
 """)
 
 # ------------------------
-# Camera / Model
+# Webcam Transformer
 # ------------------------
-st.header("Plastic Detection (Browser Model)")
-st.markdown(
-    "Your live camera detection runs in the browser. Open the camera below:"
-)
+CLASS_NAMES = ["Plastic", "Not Plastic"]  # Update with your actual classes
 
-# Embed browser camera page
-st.components.v1.iframe("index.html", height=500)
+class VideoTransformer(VideoTransformerBase):
+    def transform(self, frame):
+        img = frame.to_ndarray(format="bgr24")
+        # Resize to model input size if needed
+        img_resized = cv2.resize(img, (224, 224))
+        # Dummy prediction (replace with actual model logic)
+        # Here we randomly simulate prediction to show live feedback
+        pred_idx = np.random.randint(len(CLASS_NAMES))
+        label = CLASS_NAMES[pred_idx]
+
+        # Draw label on frame
+        cv2.putText(
+            img, f"Detected: {label}", (10, 30),
+            cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2
+        )
+        return img
+
+webrtc_streamer(key="camera", video_transformer_factory=VideoTransformer)
 
 # ------------------------
 # Pyrolysis Simulation
