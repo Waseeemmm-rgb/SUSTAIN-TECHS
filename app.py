@@ -1,88 +1,57 @@
 import streamlit as st
+from streamlit_webrtc import webrtc_streamer, VideoTransformerBase
+import numpy as np
+import cv2
 
 st.set_page_config(page_title="SUSTAIN TECH AI", layout="wide")
+st.title("SUSTAIN TECH AI — Plastic Detection + Pyrolysis")
 
-st.title("SUSTAIN TECH AI — Plastic Detection & Pyrolysis")
-
-st.markdown("Detect plastic using AI → simulate pyrolysis → check quality")
+st.markdown("Live webcam → detect plastic → simulate pyrolysis")
 
 # -------------------------
-# Teachable Machine Web App
+# Dummy AI (replace later)
 # -------------------------
+CLASS_NAMES = ["Plastic", "Not Plastic"]
 
-st.components.v1.html("""
-<div style="text-align:center;">
-    <h3>📷 Plastic Detection Camera</h3>
-    <button onclick="init()">Start Camera</button>
-    <div id="webcam-container"></div>
-    <div id="label-container"></div>
-</div>
+def fake_model(frame):
+    # For now: random prediction (replace later with real model)
+    if np.mean(frame) > 100:
+        return "Plastic", 0.85
+    else:
+        return "Not Plastic", 0.80
 
-<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest"></script>
-<script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest"></script>
+# -------------------------
+# Webcam Class
+# -------------------------
+class VideoTransformer(VideoTransformerBase):
+    def transform(self, frame):
+        img = frame.to_ndarray(format="bgr24")
 
-<script>
-const URL = "./my_model/";
+        label, conf = fake_model(img)
 
-let model, webcam, labelContainer, maxPredictions;
+        # Display prediction on frame
+        cv2.putText(
+            img,
+            f"{label} ({conf:.2f})",
+            (20, 40),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            1,
+            (0, 255, 0) if label == "Plastic" else (0, 0, 255),
+            2,
+        )
 
-async function init() {
-    const modelURL = URL + "model.json";
-    const metadataURL = URL + "metadata.json";
+        return img
 
-    model = await tmImage.load(modelURL, metadataURL);
-    maxPredictions = model.getTotalClasses();
+# -------------------------
+# Start Webcam
+# -------------------------
+st.header("📷 Live Camera Detection")
 
-    webcam = new tmImage.Webcam(250, 250, true);
-    await webcam.setup();
-    await webcam.play();
-    window.requestAnimationFrame(loop);
-
-    document.getElementById("webcam-container").appendChild(webcam.canvas);
-    labelContainer = document.getElementById("label-container");
-
-    for (let i = 0; i < maxPredictions; i++) {
-        labelContainer.appendChild(document.createElement("div"));
-    }
-}
-
-async function loop() {
-    webcam.update();
-    await predict();
-    window.requestAnimationFrame(loop);
-}
-
-async function predict() {
-    const prediction = await model.predict(webcam.canvas);
-
-    let topClass = "";
-    let topProb = 0;
-
-    for (let i = 0; i < maxPredictions; i++) {
-        let p = prediction[i];
-        let text = p.className + ": " + p.probability.toFixed(2);
-        labelContainer.childNodes[i].innerHTML = text;
-
-        if (p.probability > topProb) {
-            topProb = p.probability;
-            topClass = p.className;
-        }
-    }
-
-    // Show plastic status clearly
-    if (topClass.toLowerCase().includes("plastic")) {
-        document.body.style.backgroundColor = "#d4edda";
-    } else {
-        document.body.style.backgroundColor = "#f8d7da";
-    }
-}
-</script>
-""", height=600)
+webrtc_streamer(key="camera", video_transformer_factory=VideoTransformer)
 
 # -------------------------
 # Pyrolysis Simulation
 # -------------------------
-
 st.header("🔥 Pyrolysis Simulation")
 
 if st.button("Run Simulation"):
