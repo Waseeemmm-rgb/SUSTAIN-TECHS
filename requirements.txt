@@ -1,18 +1,6 @@
-# Streamlit for web app
-streamlit==1.29.0
-
-# OpenCV for camera access
-opencv-python-headless==4.8.1.78
-
-# TensorFlow (if your model is a TF/Keras model)
-tensorflow==2.14.0
-
-# Numpy & Pandas for data handling
-numpy==1.26.0
-pandas==2.1.0
-
-# PIL for image processing (optional but useful)
-Pillow==10.1.0
-
-# Matplotlib for charts (if you want more control)
-matplotlib==3.8.0
+streamlit
+tensorflow
+opencv-python-headless
+numpy
+matplotlib
+Pillow
