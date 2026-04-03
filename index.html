@@ -1,85 +1,64 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>SUSTAIN TECH AI - Camera</title>
+    <title>SUSTAIN TECH AI — Live Camera</title>
 </head>
+<body>
 
-<body style="text-align:center; font-family:sans-serif;">
-  <h1>📷 Plastic Detection Camera</h1>
+<h2>📷 Plastic Detection</h2>
+<button onclick="init()">Start Camera</button>
 
-  <button onclick="init()">Start Camera</button>
+<div id="webcam-container"></div>
+<div id="label-container"></div>
 
-  <div id="webcam-container"></div>
-  <div id="label-container"></div>
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest/dist/teachablemachine-image.min.js"></script>
 
-  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest"></script>
+<script>
+const URL = "https://teachablemachine.withgoogle.com/models/GI8oQCGYG/";
 
-  <script>
-    const URL = "./my_model/";
+let model, webcam, labelContainer, maxPredictions;
 
-    let model, webcam, labelContainer, maxPredictions;
+async function init() {
+    const modelURL = URL + "model.json";
+    const metadataURL = URL + "metadata.json";
 
-    async function init() {
-      const modelURL = URL + "model.json";
-      const metadataURL = URL + "metadata.json";
+    model = await tmImage.load(modelURL, metadataURL);
+    maxPredictions = model.getTotalClasses();
 
-      model = await tmImage.load(modelURL, metadataURL);
-      maxPredictions = model.getTotalClasses();
+    webcam = new tmImage.Webcam(300, 300, true);
+    await webcam.setup();
+    await webcam.play();
+    document.getElementById("webcam-container").appendChild(webcam.canvas);
 
-      webcam = new tmImage.Webcam(300, 300, true);
-      await webcam.setup();
-      await webcam.play();
-      window.requestAnimationFrame(loop);
-
-      document.getElementById("webcam-container").appendChild(webcam.canvas);
-
-      labelContainer = document.getElementById("label-container");
-      for (let i = 0; i < maxPredictions; i++) {
+    labelContainer = document.getElementById("label-container");
+    for (let i = 0; i < maxPredictions; i++) {
         labelContainer.appendChild(document.createElement("div"));
-      }
     }
 
-    async function loop() {
-      webcam.update();
-      await predict();
-      window.requestAnimationFrame(loop);
-    }
+    window.requestAnimationFrame(loop);
+}
 
-    async function predict() {
-      const prediction = await model.predict(webcam.canvas);
+async function loop() {
+    webcam.update(); 
+    const prediction = await model.predict(webcam.canvas);
 
-      let topClass = "";
-      let topProb = 0;
+    labelContainer.innerHTML = "";
+    let topClass = "";
+    let topProb = 0;
 
-      for (let i = 0; i < prediction.length; i++) {
+    for (let i = 0; i < prediction.length; i++) {
         const p = prediction[i];
-
-        labelContainer.childNodes[i].innerHTML =
-          p.className + ": " + p.probability.toFixed(2);
-
+        labelContainer.innerHTML += `<div>${p.className}: ${(p.probability*100).toFixed(1)}%</div>`;
         if (p.probability > topProb) {
-          topProb = p.probability;
-          topClass = p.className;
+            topProb = p.probability;
+            topClass = p.className;
         }
-      }
-
-      // CLEAR RESULT
-      let resultBox = document.getElementById("result");
-      if (!resultBox) {
-        resultBox = document.createElement("h2");
-        resultBox.id = "result";
-        document.body.appendChild(resultBox);
-      }
-
-      if (topClass.toLowerCase().includes("plastic")) {
-        resultBox.innerHTML = "✅ Plastic Detected";
-        resultBox.style.color = "green";
-      } else {
-        resultBox.innerHTML = "❌ Not Plastic";
-        resultBox.style.color = "red";
-      }
     }
-  </script>
+
+    window.requestAnimationFrame(loop);
+}
+</script>
+
 </body>
 </html>
