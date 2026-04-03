@@ -1,57 +1,48 @@
 import streamlit as st
-from PIL import Image
 import numpy as np
+import time
 
 st.set_page_config(page_title="SUSTAIN TECH AI", layout="wide")
+st.title("SUSTAIN TECH AI — Plastic Tracking & Pyrolysis Simulation")
 
-st.title("SUSTAIN TECH AI — Plastic Detection + Pyrolysis")
+st.markdown("""
+Prototype: Tracks plastic type using camera, simulates pyrolysis, and checks product quality.
+""")
 
-st.markdown("Use camera to capture plastic → detect → simulate pyrolysis")
+# ------------------------
+# Camera / Model
+# ------------------------
+st.header("Plastic Detection (Browser Model)")
+st.markdown(
+    "Your live camera detection runs in the browser. Open the camera below:"
+)
 
-# -------------------------
-# Camera (WORKING)
-# -------------------------
-st.header("📷 Capture Image")
+# Embed browser camera page
+st.components.v1.iframe("index.html", height=500)
 
-image = st.camera_input("Take a picture")
+# ------------------------
+# Pyrolysis Simulation
+# ------------------------
+st.header("Digital Pyrolysis Simulation")
+st.progress(0)
+for i in range(101):
+    time.sleep(0.02)
+    st.progress(i)
+st.success("Pyrolysis simulation complete! 🔥")
 
-if image:
-    img = Image.open(image)
-    st.image(img, caption="Captured Image", use_column_width=True)
+# ------------------------
+# Product Quality / Efficiency Check
+# ------------------------
+st.header("Product Quality & Efficiency")
+efficiency = round(np.random.uniform(70, 95), 2)
+yield_pct = round(np.random.uniform(60, 90), 2)
+impurity_pct = round(np.random.uniform(0, 10), 2)
 
-    # Convert to array
-    img_array = np.array(img)
+st.write(f"Estimated Efficiency: **{efficiency}%**")
+st.write(f"Product Yield: **{yield_pct}%**")
+st.write(f"Impurities: **{impurity_pct}%**")
 
-    # -------------------------
-    # SIMPLE AI LOGIC (TEMP)
-    # -------------------------
-    if np.mean(img_array) > 100:
-        label = "Plastic"
-        confidence = 0.85
-    else:
-        label = "Not Plastic"
-        confidence = 0.80
-
-    st.subheader("🤖 Detection Result")
-    st.write(f"**{label}** (Confidence: {confidence})")
-
-    # -------------------------
-    # Pyrolysis Simulation
-    # -------------------------
-    st.header("🔥 Pyrolysis Simulation")
-
-    if st.button("Run Simulation"):
-        progress = st.progress(0)
-
-        for i in range(100):
-            progress.progress(i + 1)
-
-        st.success("Pyrolysis Complete!")
-
-        st.subheader("📊 Output Quality")
-
-        st.write("Efficiency: 87%")
-        st.write("Fuel Yield: 78%")
-        st.write("Impurity: Low")
-
-        st.success("High-quality fuel produced ✅")
+if efficiency > 85 and impurity_pct < 5:
+    st.success("High quality pyrolysis product! ✅")
+else:
+    st.warning("Product quality moderate — consider process optimization ⚠️")
