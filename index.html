@@ -40,7 +40,7 @@ async function init() {
 }
 
 async function loop() {
-    webcam.update(); 
+    webcam.update();
     const prediction = await model.predict(webcam.canvas);
 
     labelContainer.innerHTML = "";
